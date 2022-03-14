@@ -54,6 +54,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <iterator>
 #include <tuple>
 
 namespace
@@ -265,6 +266,13 @@ CpGrid::scatterGrid(EdgeWeightMethod method,
             }
         }
         comm().barrier();
+
+        // DEBUG HACK
+        if (comm().rank() == 0) {
+            // Dump partition vector.
+            std::ofstream os("partition_dump.txt");
+            std::copy(computedCellPart.begin(), computedCellPart.end(), std::ostream_iterator<double>(os, "\n"));
+        }
 
         // first create the overlap
         auto noImportedOwner = addOverlapLayer(*this, computedCellPart, exportList, importList, cc, addCornerCells,
