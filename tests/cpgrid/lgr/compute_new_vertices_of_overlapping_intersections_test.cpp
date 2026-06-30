@@ -70,7 +70,7 @@ void checkFaceCountInLeafCoarseElem(const Dune::CpGrid& grid,
     for (const auto& element : Dune::elements(grid.leafGridView())) {
         if (element.level() == 0) {
 
-            const auto& cellToFace = grid.currentLeafData().cellToFace(element.index()); 
+            const auto& cellToFace = grid.currentLeafData().cellToFace(element.index());
             BOOST_CHECK_EQUAL( cellToFace.size(), expectedTotalFaceCount);
 
             const auto classifiedFaces =  Opm::Lgr::groupFaceIndicesByType(grid.currentLeafData(),
@@ -88,16 +88,16 @@ void checkFaceToCoord(const Dune::cpgrid::CpGridData& refinedGridData,
                       const std::set<Coordinate,Opm::Lgr::FieldVectorLess>& expectedFaceToCoord1,
                       const std::set<Coordinate,Opm::Lgr::FieldVectorLess>& expectedFaceToCoord2)
 {
-     
+
     for (const auto& faceIdx : selectedFaces) {
-                
+
         const auto& faceToPoint = refinedGridData.faceToPoint(faceIdx);
         std::set<Coordinate,Opm::Lgr::FieldVectorLess> faceToCoord{};
         for (const auto& point : faceToPoint) {
             const auto pointEntity = Dune::cpgrid::Entity<3>(refinedGridData, point, true);
             faceToCoord.insert(pointEntity.geometry().center());
         }
-        BOOST_CHECK( (faceToCoord == expectedFaceToCoord1) || (faceToCoord == expectedFaceToCoord2) );        
+        BOOST_CHECK( (faceToCoord == expectedFaceToCoord1) || (faceToCoord == expectedFaceToCoord2) );
     }
 }
 
@@ -106,7 +106,7 @@ void checkNewRefinedFaces(const Dune::CpGrid& grid,
                           const std::vector<std::vector<std::set<Coordinate,Opm::Lgr::FieldVectorLess>>>& selectedFaceToCoord,
                           int repeatedFaceType)
 {
-    
+
     for (const auto& refinedElem : Dune::elements(grid.levelGridView(1))) {
 
         const auto& cellToFace = refinedGridData.cellToFace(refinedElem.index());
@@ -121,30 +121,30 @@ void checkNewRefinedFaces(const Dune::CpGrid& grid,
                                   classifiedFaces);
 
             checkFaceToCoord(refinedGridData,
-                             classifiedFaces[repeatedFaceType], 
+                             classifiedFaces[repeatedFaceType],
                              selectedFaceToCoord[refinedElem.index()][0],
                              selectedFaceToCoord[refinedElem.index()][1]);
-            
+
         }
         else if (selectedFaceToCoord[refinedElem.index()].size() == 1){
-            
+
             BOOST_CHECK_EQUAL( cellToFace.size(), 6);
-            
+
             checkFaceCountPerType(/* repeatedFaceType = */ -1, // invalid face type
-                                  /* expectedRepeatedFaceTypeCount = */ 0, 
+                                  /* expectedRepeatedFaceTypeCount = */ 0,
                                   classifiedFaces);
 
             checkFaceToCoord(refinedGridData,
-                             classifiedFaces[repeatedFaceType], 
+                             classifiedFaces[repeatedFaceType],
                              selectedFaceToCoord[refinedElem.index()][0],
                              selectedFaceToCoord[refinedElem.index()][0]); // same, here there is no repeaetd face
         }
         else {
             BOOST_CHECK(selectedFaceToCoord[refinedElem.index()].empty());
             BOOST_CHECK_EQUAL( cellToFace.size(), 6);
-            
+
             checkFaceCountPerType(/* repeatedFaceType = */ -1, // invalid face type
-                                  /* expectedRepeatedFaceTypeCount = */ 0, 
+                                  /* expectedRepeatedFaceTypeCount = */ 0,
                                   classifiedFaces);
         }
     }
@@ -248,7 +248,7 @@ PORO
     const auto& leafGridData = grid.currentLeafData();
     BOOST_CHECK_EQUAL( leafGridData.size(3), 46); // 40 in level 1 + 6 vertices from cell_to_point_ from coarse element
     BOOST_CHECK_EQUAL( leafGridData.numFaces(), 61); // 55 in level 1 + 6 other faces from coarse element
-   
+
     std::cout<< grid.levelGridView(0).size(3) << " level 0 vertices " <<std::endl;
     std::cout<< grid.levelGridView(1).size(3) << " level 1 vertices " <<std::endl;
     std::cout<< grid.leafGridView().size(3) << " leaf vertices " <<std::endl;
@@ -269,7 +269,7 @@ PORO
     selectedFaceToCoord.resize(grid.levelGridView(1).size(0));
 
     for (const auto& refinedElem : Dune::elements(grid.levelGridView(1))) {
-        
+
         std::set<Coordinate,Opm::Lgr::FieldVectorLess> expectedNewFaceInFace2{}; // {vertex '0', vertex '1', vertex '2', vertex '3'}
         std::set<Coordinate,Opm::Lgr::FieldVectorLess> expectedNewFaceInFace1{};
         // Vertex order in I_FACE: 0->jk, 1-> (j+1)k, 2->(j+1)(k+1), 3->j(k+1)
@@ -392,29 +392,29 @@ PORO
                               /* endIJK_vec */        {{1,1,1}},
                               /* lgr_name_vec */      {"LGR1"});
 
-   
+
 
     // Element 0 in level zero grid has two faces of type {I_FACE, true}
     //
-    // Vertices of those faces lie on the plane x = 6    | After refinement, number of subdivisions in      
+    // Vertices of those faces lie on the plane x = 6    | After refinement, number of subdivisions in
     //                                                   | y- and z- directions:
-    //              (6,0,8) ---------------- (6,6,8)     |  (6,0,8) --(6,2,8)-(6,4,8)--(6,6,8)              
-    //                 |                      |          |     |         *       *        |                
-    //                 |                      |          |  (6,0,7) **(6,2,7)*(6,4,7)**(6,6,7)      
-    //                 |                      |          |     |         *       *        |                
-    //                 |                      |          |  (6,0,6) **(6,2,6)*(6,4,6)**(6,6,6)             
-    //                 |                      |          |     |         *       *        |                 
-    //                 |      face idx 2      |          |  (6,0,5) **(6,2,5)*(6,4,5)**(6,6,5)             
-    //                 |                      |          |     |         *       *        |                
-    //                 |                      |          |  (6,0,4) **(6,2,4)*(6,4,4)**(6,6,4)             
-    //                 |                      |          |     |         *       *        |                  
-    //                 |                      |          |  (6,0,3) **(6,2,3)*(6,4,3)**(6,6,3)             
-    //                 |                      |          |     |         *       *        |                  
-    //                 |                      |          |  (6,0,2) **(6,2,2)*(6,4,2)**(6,6,2)           
-    //                 |                      |          |     |         *       *        |                 
-    //              (6,0,1) -----------------(6,6,1)     |  (6,0,1) --(6,2,1)-(6,4,1)--(6,6,1)              
-    //                 |      face idx 1      |          |     |         *       *        |                 
-    //              (6,0,0) -----------------(6,6,0)     |  (6,0,0) --(6,2,0)-(6,4,0)--(6,6,0)               
+    //              (6,0,8) ---------------- (6,6,8)     |  (6,0,8) --(6,2,8)-(6,4,8)--(6,6,8)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |  (6,0,7) **(6,2,7)*(6,4,7)**(6,6,7)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |  (6,0,6) **(6,2,6)*(6,4,6)**(6,6,6)
+    //                 |                      |          |     |         *       *        |
+    //                 |      face idx 2      |          |  (6,0,5) **(6,2,5)*(6,4,5)**(6,6,5)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |  (6,0,4) **(6,2,4)*(6,4,4)**(6,6,4)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |  (6,0,3) **(6,2,3)*(6,4,3)**(6,6,3)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |  (6,0,2) **(6,2,2)*(6,4,2)**(6,6,2)
+    //                 |                      |          |     |         *       *        |
+    //              (6,0,1) -----------------(6,6,1)     |  (6,0,1) --(6,2,1)-(6,4,1)--(6,6,1)
+    //                 |      face idx 1      |          |     |         *       *        |
+    //              (6,0,0) -----------------(6,6,0)     |  (6,0,0) --(6,2,0)-(6,4,0)--(6,6,0)
     //                                                   |
 
     const auto& refinedGridData = *grid.currentData()[1];
@@ -426,7 +426,7 @@ PORO
     BOOST_CHECK_EQUAL( refinedGridData.size(3), 108);
     // LGR1 dims 2x3x8 -> 3x4x9 (= 108) vertices (4 "missing" vertices  (6,0,1), (6,2,1), (6,4,1), and (6,6,1) exist).
     BOOST_CHECK_EQUAL( refinedGridData.numFaces(), 190);
-    // LGR1 dims 2x3x8 -> (72+64+54=) 190 faces (before and after correction). 
+    // LGR1 dims 2x3x8 -> (72+64+54=) 190 faces (before and after correction).
 
 
     // Originally, the element not involved in refinement
@@ -443,7 +443,7 @@ PORO
     //  BOOST_CHECK_EQUAL( leafGridData.size(3), 114); // 108 in level 1 + 6 vertices from cell_to_point_ from coarse element
     /** two extra wrong 116 probably (6,0,1)  and (6,6,1) are counted twice. */
     BOOST_CHECK_EQUAL( leafGridData.numFaces(), 196); // 190 in level 1 + 6 other faces from coarse element
-   
+
     std::cout<< grid.levelGridView(0).size(3) << " level 0 vertices " <<std::endl;
     std::cout<< grid.levelGridView(1).size(3) << " level 1 vertices " <<std::endl;
     std::cout<< grid.leafGridView().size(3) << " leaf vertices " <<std::endl;
@@ -563,7 +563,7 @@ PORO
     std::vector<std::vector<std::set<Coordinate,Opm::Lgr::FieldVectorLess>>> selectedFaceToCoord{};
     selectedFaceToCoord.resize(grid.levelGridView(1).size(0));
 
-    for (const auto& refinedElem : Dune::elements(grid.levelGridView(1))) { 
+    for (const auto& refinedElem : Dune::elements(grid.levelGridView(1))) {
 
         std::set<Coordinate, Opm::Lgr::FieldVectorLess> expectedNewFaceInFace3{};
         std::set<Coordinate, Opm::Lgr::FieldVectorLess> expectedNewFaceInFace2{};
@@ -631,7 +631,7 @@ PORO
     }
     checkNewRefinedFaces(grid, refinedGridData,
                          selectedFaceToCoord, /* repeatedFaceType = */ 0); // 0-> I-
-    
+
     Opm::checkGridWithLgrs(grid,
                            /* cells_per_dim_vec = */ {{2,3,2}},
                            /* lgr_name_vec = */ {"LGR1"});
@@ -742,11 +742,11 @@ PORO
                                    /* expectedTotalFaceCount = */ 12,
                                    /* repeatedFaceType = */ 2, // 2->J-
                                    /* expoectedRepeatedFaceTypeCount = */ 7);
-    
+
     // Collect the expected data to later on check
     std::vector<std::vector<std::set<Coordinate,Opm::Lgr::FieldVectorLess>>> selectedFaceToCoord{};
     selectedFaceToCoord.resize(grid.levelGridView(1).size(0));
-    
+
     for (const auto& refinedElem : Dune::elements(grid.levelGridView(1))) {
 
         std::set<Coordinate, Opm::Lgr::FieldVectorLess> expectedNewFaceInFace6{};
@@ -999,7 +999,7 @@ PORO
     }
     checkNewRefinedFaces(grid, refinedGridData,
                          selectedFaceToCoord, /* repeatedFaceType = */ 2); // 2-> J-
-    
+
      Opm::checkGridWithLgrs(grid,
                            /* cells_per_dim_vec = */ {{3,2,2}},
                            /* lgr_name_vec = */ {"LGR1"});
@@ -1053,30 +1053,30 @@ PORO
                               deckString);
     /*  Opm::createGridAndAddLgrs(grid,
                             deckString,
-                            {{2,3,2}, {2,3,2}}, // cells_per_dim_vec 
-                            {{0,0,0}, {1,0,0}}, // startIJK_vec 
-                            {{1,1,1}, {2,1,1}}, // endIJK_vec 
+                            {{2,3,2}, {2,3,2}}, // cells_per_dim_vec
+                            {{0,0,0}, {1,0,0}}, // startIJK_vec
+                            {{1,1,1}, {2,1,1}}, // endIJK_vec
                             {"LGR1", "LGR2"});  // lgr_name_vec*/
 
     // Element 0 and element 1 in level zero grid share an I_FACE (with face index 2)
     //
-    // Vertices of those faces lie on the plane x = 6    | After refinement, number of subdivisions in      
+    // Vertices of those faces lie on the plane x = 6    | After refinement, number of subdivisions in
     //                                                   | y- and z- directions:
     //
-    //              (6,0,9) -----------------(6,6,9)     |  (6,0,9) --(6,2,9)-(6,4,9)--(6,6,9)  
-    //                 |      face idx 3      |          |     |         *       *        |    
-    //              (6,0,8) ---------------- (6,6,8)     |  (6,0,8) --(6,2,8)-(6,4,8)--(6,6,8)               
-    //                 |                      |          |     |         *       *        |                 
-    //                 |                      |          |     |         *       *        |                  
-    //                 |                      |          |     |         *       *        |                  
+    //              (6,0,9) -----------------(6,6,9)     |  (6,0,9) --(6,2,9)-(6,4,9)--(6,6,9)
+    //                 |      face idx 3      |          |     |         *       *        |
+    //              (6,0,8) ---------------- (6,6,8)     |  (6,0,8) --(6,2,8)-(6,4,8)--(6,6,8)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |     |         *       *        |
     //                 |      face idx 2      |          |  (6,0,5) **(6,2,5)*(6,4,5)**(6,6,5)
-    //                 |                      |          |     |         *       *        |     
-    //                 |                      |          |  (6,0,4) **(6,2,4)*(6,4,4)**(6,6,4)              
-    //                 |                      |          |     |         *       *        |                  
-    //                 |                      |          |     |         *       *        |                 
-    //              (6,0,1) -----------------(6,6,1)     |  (6,0,1) --(6,2,1)-(6,4,1)--(6,6,1)              
-    //                 |      face idx 1      |          |     |         *       *        |                  
-    //              (6,0,0) -----------------(6,6,0)     |  (6,0,0) --(6,2,0)-(6,4,0)--(6,6,0)              
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |  (6,0,4) **(6,2,4)*(6,4,4)**(6,6,4)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |     |         *       *        |
+    //              (6,0,1) -----------------(6,6,1)     |  (6,0,1) --(6,2,1)-(6,4,1)--(6,6,1)
+    //                 |      face idx 1      |          |     |         *       *        |
+    //              (6,0,0) -----------------(6,6,0)     |  (6,0,0) --(6,2,0)-(6,4,0)--(6,6,0)
     //                                                   |
     //  const auto& refinedGrid1= *grid.currentData()[1];
     //   const auto& refinedGrid2= *grid.currentData()[1];
@@ -1093,8 +1093,8 @@ PORO
     // Single-cell-refinement for parent with index 0
     const auto [parentFaceAwareCellRefinement0,
                 cellRefinementBoundaryInfo0]
-        = grid.currentLeafData().refineSingleCell( std::array<int,3>{2,3,2}, // cells_per_dim 
-                                                   0, // parent cell index 
+        = grid.currentLeafData().refineSingleCell( std::array<int,3>{2,3,2}, // cells_per_dim
+                                                   0, // parent cell index
                                                    faceInMarkedElemAndRefinedFaces);
 
     // Single-cell-refinement for parent cell with index 1
@@ -1172,23 +1172,23 @@ PORO
 
     // Element 0 and element 1 in level zero grid share an I_FACE (with face index 2)
     //
-    // Vertices of those faces lie on the plane x = 6    | After refinement, number of subdivisions in      
+    // Vertices of those faces lie on the plane x = 6    | After refinement, number of subdivisions in
     //                                                   | y- and z- directions:
     //
-    //              (6,0,9) -----------------(6,6,9)     |  (6,0,9) --(6,2,9)-(6,4,9)--(6,6,9)  
-    //                 |      face idx 3      |          |     |         *       *        |    
-    //              (6,0,8) ---------------- (6,6,8)     |  (6,0,8) --(6,2,8)-(6,4,8)--(6,6,8)               
-    //                 |                      |          |     |         *       *        |                 
-    //                 |                      |          |     |         *       *        |                  
-    //                 |                      |          |     |         *       *        |                  
+    //              (6,0,9) -----------------(6,6,9)     |  (6,0,9) --(6,2,9)-(6,4,9)--(6,6,9)
+    //                 |      face idx 3      |          |     |         *       *        |
+    //              (6,0,8) ---------------- (6,6,8)     |  (6,0,8) --(6,2,8)-(6,4,8)--(6,6,8)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |     |         *       *        |
     //                 |      face idx 2      |          |  (6,0,5) **(6,2,5)*(6,4,5)**(6,6,5)
-    //                 |                      |          |     |         *       *        |     
-    //                 |                      |          |  (6,0,4) **(6,2,4)*(6,4,4)**(6,6,4)              
-    //                 |                      |          |     |         *       *        |                  
-    //                 |                      |          |     |         *       *        |                 
-    //              (6,0,1) -----------------(6,6,1)     |  (6,0,1) --(6,2,1)-(6,4,1)--(6,6,1)              
-    //                 |      face idx 1      |          |     |         *       *        |                  
-    //              (6,0,0) -----------------(6,6,0)     |  (6,0,0) --(6,2,0)-(6,4,0)--(6,6,0)              
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |  (6,0,4) **(6,2,4)*(6,4,4)**(6,6,4)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |     |         *       *        |
+    //              (6,0,1) -----------------(6,6,1)     |  (6,0,1) --(6,2,1)-(6,4,1)--(6,6,1)
+    //                 |      face idx 1      |          |     |         *       *        |
+    //              (6,0,0) -----------------(6,6,0)     |  (6,0,0) --(6,2,0)-(6,4,0)--(6,6,0)
     //                                                   |
 
     // const auto& refinedGridData = *grid.currentData()[1];
@@ -1205,8 +1205,8 @@ PORO
     // Single-cell-refinement for parent with index 0
     const auto [parentFaceAwareCellRefinement0,
                 cellRefinementBoundaryInfo0]
-        = grid.currentLeafData().refineSingleCell( std::array<int,3>{2,3,2}, // cells_per_dim 
-                                                   0, // parent cell index 
+        = grid.currentLeafData().refineSingleCell( std::array<int,3>{2,3,2}, // cells_per_dim
+                                                   0, // parent cell index
                                                    faceInMarkedElemAndRefinedFaces);
 
     // Single-cell-refinement for parent cell with index 1
@@ -1223,4 +1223,3 @@ PORO
                                    parent1,
                                    faceInMarkedElemAndRefinedFaces);
 }
-
