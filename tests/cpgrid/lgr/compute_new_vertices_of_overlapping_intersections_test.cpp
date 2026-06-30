@@ -1223,3 +1223,111 @@ PORO
                                    parent1,
                                    faceInMarkedElemAndRefinedFaces);
 }
+
+BOOST_AUTO_TEST_CASE(neighboringSingleCellRefinementsSameLgrSkew)
+{
+    // Level zero grid dims = 2x1x1
+    //
+    // cell 0
+    // bottom face corners (0,0,0), (6,0,0), (0,6,0), (6,6,0)
+    //    top face corners (0,0,8), (6,0,8), (0,6,8), (6,6,8)
+    //
+    // cell 1
+    // bottom face corners (6,0,1), (12,0,1), (6,6,1),  (12,6,1)
+    //    top face corners (6,0,9), (12,0,9), (12,6,9), (12,6,9)
+    const std::string deckString =
+        R"(RUNSPEC
+DIMENS
+ 2 1 1 /
+
+GRID
+
+COORD
+ 0 0 0     0 0 9
+ 6 0 0     6 3 9
+12 0 0    12 0 9
+
+ 0 6 0    0 6 9
+ 6 6 0    6 6 9
+12 6 0   12 6 9
+/
+
+ZCORN
+0 0 1 1  0 0 1 1
+8 8.2 9 9  7.1 5 9 9
+/
+
+ACTNUM
+2*1
+/
+
+PORO
+2*0.15
+/
+)";
+
+    Dune::CpGrid grid;
+    Opm::createGridFromDeckString(grid,
+                                  deckString);
+
+
+    // Opm::createGridAndAddLgrs(grid,
+    //                        deckString,
+    //                       /* cells_per_dim_vec */ {{2,3,2}},
+    //                        /* startIJK_vec */      {{0,0,0}},
+    //                            /* endIJK_vec */        {{2,1,1}},
+    //                         /* lgr_name_vec */      {"LGR1"});
+
+    // Element 0 and element 1 in level zero grid share an I_FACE (with face index 2)
+    //
+    // Vertices of those faces lie on the plane x = 6    | After refinement, number of subdivisions in
+    //                                                   | y- and z- directions:
+    //
+    //              (6,0,9) -----------------(6,6,9)     |  (6,0,9) --(6,2,9)-(6,4,9)--(6,6,9)
+    //                 |      face idx 3      |          |     |         *       *        |
+    //              (6,0,8) ---------------- (6,6,8)     |  (6,0,8) --(6,2,8)-(6,4,8)--(6,6,8)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |     |         *       *        |
+    //                 |      face idx 2      |          |  (6,0,5) **(6,2,5)*(6,4,5)**(6,6,5)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |  (6,0,4) **(6,2,4)*(6,4,4)**(6,6,4)
+    //                 |                      |          |     |         *       *        |
+    //                 |                      |          |     |         *       *        |
+    //              (6,0,1) -----------------(6,6,1)     |  (6,0,1) --(6,2,1)-(6,4,1)--(6,6,1)
+    //                 |      face idx 1      |          |     |         *       *        |
+    //              (6,0,0) -----------------(6,6,0)     |  (6,0,0) --(6,2,0)-(6,4,0)--(6,6,0)
+    //                                                   |
+
+    // const auto& refinedGridData = *grid.currentData()[1];
+    const auto& parentGridData = *grid.currentData()[0];
+    const auto parent0 = Dune::cpgrid::Entity<0>(parentGridData, 0, true);
+    const auto parent1 = Dune::cpgrid::Entity<0>(parentGridData, 1, true);
+
+    int numCoarseFaces = grid.numFaces();
+    BOOST_CHECK_EQUAL( numCoarseFaces, 13);
+
+    std::vector<std::vector<std::pair<int, std::vector<int>>>> faceInMarkedElemAndRefinedFaces{};
+    faceInMarkedElemAndRefinedFaces.resize(numCoarseFaces);
+
+    // Single-cell-refinement for parent with index 0
+    const auto [parentFaceAwareCellRefinement0,
+                cellRefinementBoundaryInfo0]
+        = grid.currentLeafData().refineSingleCell( std::array<int,3>{2,3,2}, // cells_per_dim
+                                                   0, // parent cell index
+                                                   faceInMarkedElemAndRefinedFaces);
+
+    // Single-cell-refinement for parent cell with index 1
+    const auto [parentFaceAwareCellRefinement1,
+                cellRefinementBoundaryInfo]
+        = grid.currentLeafData().refineSingleCell(std::array<int,3>{2,3,2}, // cells_per_dim
+                                                  1, // parent cell index
+                                                  faceInMarkedElemAndRefinedFaces);
+
+    Opm::Lgr::computeNewGeometries(grid,
+                                   *parentFaceAwareCellRefinement0,
+                                   *parentFaceAwareCellRefinement1,
+                                   parent0,
+                                   parent1,
+                                   faceInMarkedElemAndRefinedFaces);
+}
